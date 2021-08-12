@@ -1,6 +1,6 @@
 # 💉 Vaccine Slot Finder
 
-Simple, minimal, yet another vaccine slot finder written in Node.js
+Simple, minimal, yet another vaccine slot finder written in Node.js at late night 😴
 
 ![](demo.png) ![](demo-2.png)
 
