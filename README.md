@@ -1,6 +1,6 @@
 # 💉 Vaccine Slot Finder
 
-Simple, minimal slot finder. Not investing too much effort into this. You know the reason!
+Simple, minimal slot finder written in Node.js
 
 ![](demo.png) ![](demo-2.png)
 
@@ -12,23 +12,26 @@ Simple, minimal slot finder. Not investing too much effort into this. You know t
   - paid slots in configured PIN(s).
   - free slots in configured district.
 
+> Not investing too much effort into this. You know the reason!
+
 ## Features
+
+no fancy features - but reliable (for me).
 
 - no DB
 - plain js and fastify
 - typescript
-- view history (just scroll up)
 - automatic dom clean up
-- history will be lost on page refresh
+- history will be lost on page refresh (feature!)
 - socket
 - well defined data pipeline using Node.js streams
 - Only 2 files
-  - server.ts
-  - index.html in plain js
+  - `server.ts`
+  - `index.html` in plain js
 
 ## Installation / Usage
 
-> Tested on Node.js 14 and Chrome 92
+> Tested on Node.js 14 and Chrome 92 at 2am in half sleep 💤
 
 - clone the repo
 - `yarn install`
@@ -50,7 +53,7 @@ const MIN_AGE = 18;
 
 To find district id, check with the https://dashboard.cowin.gov.in/
 
-> Please don't make issues. PRs are welcome.
+> Please don't make issues. PRs are welcome. Going to sleep 🛌
 
 ## Licence
 
