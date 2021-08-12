@@ -1,6 +1,6 @@
 # 💉 Vaccine Slot Finder
 
-Simple, minimal slot finder written in Node.js
+Simple, minimal, yet another vaccine slot finder written in Node.js
 
 ![](demo.png) ![](demo-2.png)
 
@@ -12,7 +12,7 @@ Simple, minimal slot finder written in Node.js
   - paid slots in configured PIN(s).
   - free slots in configured district.
 
-> Not investing too much effort into this. You know the reason!
+> Not investing too much effort into project - you know the reason!
 
 ## Features
 
