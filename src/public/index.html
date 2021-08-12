@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+      crossorigin="anonymous"
+    />
+    <title>Slot finder</title>
+    <style>
+      table {
+        font-size: 12px;
+      }
+      .col {
+        max-height: 250px;
+        overflow: auto;
+        border-left: thin rgb(214, 214, 214) solid;
+      }
+      .time {
+        margin-left: 100px;
+        background-color: var(--bs-gray-500);
+        color: white;
+        font-size: 12px;
+        padding: 4px 7px;
+        border-radius: 4px;
+      }
+
+      .data-item:first-child .time {
+        background-color: var(--bs-yellow);
+        font-size: 15px;
+        color: black;
+      }
+
+      .data-item:first-child .time.blink {
+        background-color: var(--bs-teal);
+        font-size: 18px;
+        color: black;
+        animation: blinker 0.5s linear infinite;
+      }
+
+      @keyframes blinker {
+        50% {
+          opacity: 0.2;
+        }
+      }
+
+      .data-item:first-child .table {
+        font-size: 13.5px;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-light bg-light">
+      <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">Slot Finder</span>
+        <button
+          class="btn btn-danger me-2 hidden"
+          type="button"
+          id="stop-alarm-btn"
+        >
+          STOP ALARM
+        </button>
+      </div>
+    </nav>
+
+    <div>
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col">Free In PIN</div>
+          <div class="col">Paid In PIN</div>
+          <div class="col">Free In District</div>
+        </div>
+      </div>
+    </div>
+    <br />
+    <div id="timeline">
+      <!-- timeline -->
+    </div>
+
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="consent-modal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">
+              This site will make sound
+            </h5>
+          </div>
+          <div class="modal-body">
+            When a free vaccine slot is found on the selected PINs, this site
+            will make sound.
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-danger"
+              data-bs-dismiss="modal"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div
+      class="modal"
+      id="err-modal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabelErr"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5
+              style="background-color: red; color: white"
+              class="modal-title"
+              id="exampleModalLabelErr"
+            >
+              Error occurred
+            </h5>
+          </div>
+          <div class="modal-body">Check console to see error</div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-danger"
+              data-bs-dismiss="modal"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- templates -->
+    <template id="new-content-template">
+      <div class="container-fluid data-item">
+        <div class="row">
+          <div class="col">
+            <p class="time" id="blinker-el">
+              <span id="time-data">12:45 pm</span>
+            </p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <table class="table" id="free-in-pin-host"></table>
+          </div>
+          <div class="col">
+            <table class="table" id="paid-in-pin-host"></table>
+          </div>
+          <div class="col">
+            <table class="table" id="free-in-district-host"></table>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template id="temp-table-col-4">
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </template>
+
+    <template id="temp-table-col-5">
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </template>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+      const MAX_NODES = 10;
+      const NODE_CLEANUP_INTERVAL = 10000;
+
+      const template = document.getElementById("new-content-template");
+      const col4temp = document.getElementById("temp-table-col-4");
+      const col5temp = document.getElementById("temp-table-col-5");
+      const prependHost = document.getElementById("timeline");
+      const consentModalEl = document.getElementById("consent-modal");
+      const stopAlarmBtn = document.getElementById("stop-alarm-btn");
+      const errModal = document.getElementById("err-modal");
+      const bsErrModal = new bootstrap.Modal(errModal);
+
+      consentModalEl.addEventListener("hide.bs.modal", initializeApp);
+
+      const bsModal = new bootstrap.Modal(consentModalEl);
+      bsModal.show();
+
+      function initializeApp() {
+        const warnAudio = new Audio("warn.mp3");
+        const miniAudio = new Audio("mini.mp3");
+
+        warnAudio.loop = true;
+        miniAudio.loop = true;
+        miniAudio.volume = 0.05;
+
+        const socket = io();
+
+        stopAlarmBtn.addEventListener("click", () => {
+          warnAudio.pause();
+          miniAudio.pause();
+          stopAlarmBtn.style.visibility = "hidden";
+        });
+
+        setInterval(() => {
+          // clean dom
+          if (prependHost.childNodes.length > MAX_NODES) {
+            let i = MAX_NODES - 1;
+            const max = prependHost.childNodes.length;
+            for (; i <= max; i++) {
+              prependHost.childNodes[i]?.remove();
+            }
+          }
+        }, NODE_CLEANUP_INTERVAL);
+
+        socket.on("error", (err) => {
+          console.err("BE error", err);
+          bsErrModal.show();
+        });
+
+        socket.on("new-data", (data) => {
+          const templateCopy = template.content.cloneNode(true);
+          const freeInDistrictContent = col4temp.content.cloneNode(true);
+          const paidInPinContent = col5temp.content.cloneNode(true);
+
+          const freeInPinAppendHost =
+            templateCopy.getElementById("free-in-pin-host");
+          const paidInPinAppendHost =
+            templateCopy.getElementById("paid-in-pin-host");
+          const freeInDistrictAppendHost = templateCopy.getElementById(
+            "free-in-district-host"
+          );
+          const blinkerEl = templateCopy.getElementById("blinker-el");
+
+          data.freeInPIN.forEach((item) => {
+            const freeInPinContent = col4temp.content.cloneNode(true);
+            const freeInPinTds = freeInPinContent.querySelectorAll("td");
+            freeInPinTds[0].textContent = item.name;
+            freeInPinTds[1].textContent = item.date;
+            freeInPinTds[2].textContent = item.available_capacity_dose1;
+            if (item.available_capacity_dose1) {
+              freeInPinTds[2].style["background-color"] = "lightgreen";
+            }
+            freeInPinTds[3].textContent = item.available_capacity_dose2;
+            freeInPinAppendHost.appendChild(freeInPinContent);
+          });
+
+          data.paidInPIN.forEach((item) => {
+            const paidInPinContent = col5temp.content.cloneNode(true);
+            const paidInPinTds = paidInPinContent.querySelectorAll("td");
+            paidInPinTds[0].textContent = item.name;
+            paidInPinTds[1].textContent = item.date;
+            paidInPinTds[2].textContent = item.available_capacity_dose1;
+            if (item.available_capacity_dose1) {
+              paidInPinTds[2].style["background-color"] = "lightgreen";
+            }
+
+            paidInPinTds[3].textContent = item.available_capacity_dose2;
+            if (item.vaccine_fees && item.vaccine_fees.length) {
+              paidInPinTds[4].textContent = item.vaccine_fees
+                .map((fee) => `${fee.vaccine}=${fee.fee}`)
+                .join("\n");
+            }
+            paidInPinAppendHost.appendChild(paidInPinContent);
+          });
+
+          data.freeInDistrict.forEach((item) => {
+            const freeInDistrictContent = col4temp.content.cloneNode(true);
+            const freeInDistrictTds =
+              freeInDistrictContent.querySelectorAll("td");
+            freeInDistrictTds[0].textContent = item.name;
+            freeInDistrictTds[1].textContent = item.date;
+            freeInDistrictTds[2].textContent = item.available_capacity_dose1;
+            if (item.available_capacity_dose1) {
+              freeInDistrictTds[2].style["background-color"] = "lightgreen";
+            }
+
+            freeInDistrictTds[3].textContent = item.available_capacity_dose2;
+            freeInDistrictAppendHost.appendChild(freeInDistrictContent);
+          });
+
+          templateCopy.getElementById("time-data").textContent = new Date(
+            data.updatedAt
+          ).toLocaleTimeString();
+
+          prependHost.prepend(templateCopy);
+
+          function stopAlarm(a) {
+            a.pause();
+            stopAlarmBtn.style.visibility = "hidden";
+          }
+          function ringAlarm(a) {
+            a.play();
+            stopAlarmBtn.style.visibility = "visible";
+          }
+
+          // alarm and visual setting
+          if (
+            data.freeInPIN &&
+            data.freeInPIN.length &&
+            data.freeInPIN.filter((item) => item.available_capacity_dose1)
+          ) {
+            ringAlarm(warnAudio);
+            blinkerEl.className += " blink";
+          } else {
+            stopAlarm(warnAudio);
+          }
+
+          if (
+            data.freeInDistrict &&
+            data.freeInDistrict.length &&
+            data.freeInDistrict.filter((item) => item.available_capacity_dose1)
+              .length
+          ) {
+            ringAlarm(miniAudio);
+          } else {
+            stopAlarm(miniAudio);
+          }
+        });
+
+        socket.on("error", (err) => {});
+      }
+    </script>
+  </body>
+</html>
